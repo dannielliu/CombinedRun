@@ -1,0 +1,187 @@
+#define  PedShow_cxx
+#include "Ped.h"
+#include <TH2.h>
+#include <TStyle.h>
+#include <TCanvas.h>
+
+using namespace cosmictest;
+void PedShow(){
+  //define
+//  TFile *PedShow=new TFile("PedShow.root","RECREATE");
+//  TTree *PedShwTree=new TTree("PedShwTree","PedShwTree");
+  
+
+
+  TH2F *ShowMean[2][3];
+  for(int iside=0;iside<2;iside++){
+    for(int idy=0;idy<3;idy++){
+    char cc[40];
+    sprintf(cc,"MeanDrift:Max-Min(side%d_dy%d)",iside,idy*3+2);
+    char dd[60];
+    sprintf(dd,"MeanDrift:Max-Min(side%d_dy%d);Bar;Layer",iside,idy*3+2);
+    ShowMean[iside][idy]=new TH2F(cc,dd,24,0,24,14,0,14);
+    }
+  }
+  TH2F *ShowSigma[2][3];
+  for(int iside=0;iside<2;iside++){
+    for(int idy=0;idy<3;idy++){
+    char cc[40];
+    sprintf(cc,"SigmaDrift:Max-Min(side%d_dy%d)",iside,idy*3+2);
+    char dd[60];
+    sprintf(dd,"SigmaDrift:Max-Min(side%d_dy%d);Bar;Layer",iside,idy*3+2);
+    ShowSigma[iside][idy]=new TH2F(cc,dd,24,0,24,14,0,14);
+    }
+  }
+
+  TH2F *PedCalMen[nGID];
+  TH2F *PedCalSig[nGID];
+  for (int ng=0;ng<nGID;ng++)
+  {
+         // GID[nHits]=((Layer[nHits]*Nside+Side[nHits])*Nch+Bar[nHits])*Ndy+(Dy[nHits]-2)/3;
+  Int_t idy=ng%Ndy;
+  Int_t ibar=((int)(ng/Ndy))%Nch;
+  Int_t iside=((int)(ng/Nch/Ndy))%Nside;
+  Int_t ilayer=(int)(ng/Nside/Nch/Ndy);
+  char cc[30];
+  char dd[30];
+  //for quadrant 1 ,3
+  sprintf(cc,"Layer%d_Side%d_Bar%d_Dy%d_PedMean",ilayer,iside,ibar,(idy*3+2));
+  sprintf(dd,"Layer%d_Side%d_Bar%d_Dy%d_PedSigma",ilayer,iside,ibar,(idy*3+2));
+  PedCalMen[ng]=new TH2F(cc,cc,1000,0,12,800,-400,400);
+  PedCalMen[ng]->SetMarkerStyle(24);
+  PedCalMen[ng]->SetMarkerSize(0.13);
+  PedCalSig[ng]=new TH2F(dd,dd,1000,0,12,200,0,20);
+  PedCalSig[ng]->SetMarkerStyle(25);
+  PedCalSig[ng]->SetMarkerSize(0.13);
+  }
+  Double_t MeanMax[nGID];
+  Double_t MeanMin[nGID];
+  Double_t SigmaMax[nGID];
+  Double_t SigmaMin[nGID];
+  for(int i=0;i<nGID;i++){
+  MeanMax[i]=-10000;MeanMin[i]=10000;
+  SigmaMax[i]=-10000;SigmaMin[i]=10000;
+  }
+  //get filename
+  ifstream name;
+  name.open("filename");
+  char filename[80];
+  name.getline(filename,80);
+  name.close();
+  //get Pedestal
+  CalPar calped;
+  CalParIO calpar;
+  calpar.CalParIO::SetPath(filename);
+  calpar.CalParIO::InitPedPar(&calped);
+  Int_t nentries=calpar.fChain->GetEntries();
+  Long64_t tb=0;
+ 
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    calpar.fChain->GetEntry(jentry); 
+    if(jentry==0)
+    tb=calped.timestart; 
+    Float_t timeM=(Float_t)((calped.timestart+calped.timestop)/2);
+    timeM=(Float_t)(timeM-tb)/3600.;
+    for (int ng=0;ng<nGID;ng++){
+    PedCalMen[ng]->Fill(timeM,calped.PedMean[ng]);
+    PedCalSig[ng]->Fill(timeM,calped.PedSigma[ng]);
+    if(calped.PedMean[ng]>MeanMax[ng])
+    MeanMax[ng]=calped.PedMean[ng];
+    if(calped.PedMean[ng]<MeanMin[ng])
+    MeanMin[ng]=calped.PedMean[ng];
+    if(calped.PedSigma[ng]>SigmaMax[ng])
+    SigmaMax[ng]=calped.PedSigma[ng];
+    if(calped.PedSigma[ng]<SigmaMin[ng])
+    SigmaMin[ng]=calped.PedSigma[ng];
+//  PedCalMen[ng]->Fill(Ast2Dat((calped.timestop+calped.timestart)/2),calped.PedMean[ng]);
+//  PedCalSig[ng]->Fill(Ast2Dat((calped.timestop+calped.timestart)/2),calped.PedSigma[ng]);
+    }
+  }
+  calpar.dataIO->Close();
+  
+
+  Int_t BadBuf[nGID];
+  Int_t nBad=0;
+  for (int ng=0;ng<nGID;ng++){
+    int il=(int)(ng/Nside/Nch/Ndy);
+    int ib=(int)(ng/Ndy)%Nch;
+    int is=(int)(ng/Nch/Ndy)%Nside;
+    int id=ng%3;
+   //cout<<MeanMax[ng]<<"  "<<MeanMin[ng]<<endl;
+   // cout<<SigmaMax[ng]<<"  "<<SigmaMin[ng]<<endl;
+    PedCalSig[ng]->SetAxisRange((SigmaMax[ng]+SigmaMin[ng])/2-20,(SigmaMax[ng]+SigmaMin[ng])/2+20,"Y");
+    PedCalMen[ng]->SetAxisRange((MeanMax[ng]+MeanMin[ng])/2-20,(MeanMax[ng]+MeanMin[ng])/2+20,"Y");
+    
+    ShowMean[is][id]->SetBinContent(ib+1,il+1,(int)((MeanMax[ng]-MeanMin[ng])*100)/100.);
+    ShowSigma[is][id]->SetBinContent(ib+1,il+1,(int)((SigmaMax[ng]-SigmaMin[ng])*100)/100.);
+    if((MeanMax[ng]-MeanMin[ng])>=4||(SigmaMax[ng]-SigmaMin[ng])>=4){
+    BadBuf[nBad]=ng;
+    nBad++;
+    }
+  }
+  gStyle->SetOptStat(000);
+ TCanvas *Ped_inf0=new TCanvas("Pedestal inf0","Pedestal inf0",0,0,600,800);
+//  gStyle->SetTextFont(72);
+  gStyle->SetTextSizePixels(12);
+  Ped_inf0->Divide(2,3);
+  for(int iside=0;iside<2;iside++){
+    for(int idy=0;idy<3;idy++){
+      Ped_inf0->cd(iside*3+idy+1);
+      gPad->SetGrid();
+      ShowMean[iside][idy]->Draw("ColTEXTZ");
+      }
+  }
+ Ped_inf0->Print("PedShow.eps(","Portrait");
+ TCanvas *Ped_inf1=new TCanvas("Pedestal inf1","Pedestal inf1",0,0,600,800);
+//  gStyle->SetTextFont(72);
+  gStyle->SetTextSizePixels(12);
+  Ped_inf1->Divide(2,3);
+  for(int iside=0;iside<2;iside++){
+    for(int idy=0;idy<3;idy++){
+      Ped_inf1->cd(iside*3+idy+1);
+      gPad->SetGrid();
+      ShowSigma[iside][idy]->Draw("ColTEXTZ");
+      }
+  }
+
+ //badShow
+ if(nBad==0)
+   Ped_inf1->Print("PedShow.eps)");
+ else{
+   Ped_inf1->Print("PedShow.eps");
+   TCanvas *showMS=new TCanvas("showMS","showMS",0,0,800,600);
+   showMS->Divide(4,3);
+   cout<<"unstable channel number:"<<nBad<<endl;  
+   if(nBad>6){ 
+     cout<<"fisrt 6 shown in PedShow.eps!!!"<<endl;
+     nBad=6;
+   }
+
+   char xtitle[50];
+   char *begin=Ast2Dat(tb);
+   sprintf(xtitle,"time (hours from %s)",begin);
+
+ 
+   for(int i=0;i<nBad;i++){
+     cout<<BadBuf[i]<<endl;
+     showMS->cd(2*i+1);
+     PedCalMen[BadBuf[i]]->Draw();
+     PedCalMen[BadBuf[i]]->SetXTitle(xtitle);
+     PedCalMen[BadBuf[i]]->SetYTitle("Pedestal Mean (ADC channels)");
+     
+     showMS->cd(2*i+2);
+     PedCalSig[BadBuf[i]]->Draw();
+     PedCalSig[BadBuf[i]]->SetXTitle(xtitle);
+     PedCalSig[BadBuf[i]]->SetYTitle("Pedestal Sigma (ADC channels)");
+   }
+ showMS->Print("PedShow.eps)");
+ }
+
+
+
+
+ // PedShwTree->Fill();
+//  PedShow->cd();
+//  PedShow->Write();
+//  PedShow->Close();
+}

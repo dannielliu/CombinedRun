@@ -1,0 +1,21 @@
+#include <time.h>
+int timeconvertor(){
+  struct tm DatT0={0,0,0,1,0,113,1,0,-1};//{sec,min,hour,mday(1-31),mon(0-11),year(real-1900),wday(0-6),yday(0-365),isdst(+,0,-)}
+  struct tm DatT={0,0,16,5,5,114,3,154,-1};
+  time_t AbsT0;
+  time_t AbsT=44881348;
+//char *asctime(struct tm *p)
+//char *ctime(long time);
+//time_t mktime(struct tm *p)
+//stuct mt *gmtime(time_t *t)
+  AbsT0=mktime(&DatT0);
+  AbsT=AbsT+AbsT0;
+  double timediff=difftime(AbsT,AbsT0);
+  cout<<timediff<<endl;
+  cout<<asctime(&DatT0);
+  cout<<asctime(&DatT);
+  cout<<ctime(&AbsT);
+  struct tm *date=gmtime(&AbsT);
+  cout<<date->tm_yday<<endl; 
+ return 222;
+}
