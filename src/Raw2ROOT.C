@@ -8,12 +8,12 @@
 #include <TFile.h>
 #include <string.h>
 #include "fstream"
-#include "iostream"
+#include <iostream>
 #include "Constant.h"
 #include <iomanip>
 #include <bitset>
+#include <cstring>
 using std::bitset;
-using std::cout;
 using namespace std;
 using namespace cosmictest;
 string filename;
@@ -38,7 +38,23 @@ int main(int argc,char *argv[])
   // denfine IO
   string namesuffix=".root";
   string OF=filename;
-  OF.replace(strlen(filename.c_str())-4,4,namesuffix);
+	
+	vector<string> tmpName;
+	char *tokenPtr;
+	tokenPtr=strtok((char*)OF.c_str(),"/");
+	while(tokenPtr!=NULL) 
+  {
+    tmpName.push_back((string)tokenPtr);
+	  tokenPtr=strtok(NULL,"/");
+	}
+	if(tmpName.size()>0)
+	{
+	  OF=tmpName.at(tmpName.size()-1);
+		cout<<OF<<endl;
+	}
+
+  
+	OF.replace(strlen(OF.c_str())-4,4,namesuffix);
   string outputfile="./Raw2ROOT/"+OF;
   cout<<"Output file name is: "<<outputfile<<endl;
   TFile *outFile=new TFile(outputfile.c_str(),"RECREATE");
