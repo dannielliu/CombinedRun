@@ -269,11 +269,13 @@ int main(int argc,char *argv[])
 	        if(SizePac!=294&&SizePac!=150&&mode==0)
 	          cout<<"Tevent:"<<Tevent<<" FEE"<<header[1]<<" Size:"<<SizePac<<" mode:"<<mode<<endl;
 	        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	        //FEE buffer Fill 
+	        //FEE buffer Fill
+					int feefound=0;//########### add a flag to check whether the fee was found
 	        for (int nf=0;nf<N_FEE;nf++){
 	        //cout<<"~~~~~~~~~~~~~~~~~~~~~"<<endl;
 	        //  cout<<"FEE:"<<header[1]<<endl;   
 	        if(header[1]==FEEOrder[nf]){
+					  feefound=1;
 		        if(mode==1){//compressed mode
 		          int tchl=(int)((SizePac-6)/3);
 		          if(tchl<=N_channel[nf])//compressed
@@ -311,11 +313,14 @@ int main(int argc,char *argv[])
 		            ADC_buffer[nf][iChan]=data_2[iChan];
 		            Nhits_buffer[nf]++;
 		          }
+						//cout<<"package size - N_channel :"<<SizePac-N_channel[nf]*2<<endl;//#################
 						}
+            //########cout<<"stream posotion (before read tail): "<<hex<<(int)stream.tellg()<<endl;
 		        //cout<<"FEE:"<<header[1]<<"  nHit:"<<Nhits_buffer[header[1]%16]<<endl;
 		        for(int tai=0;tai<4;tai++) {
 		          stream.read((char *)(&tail[tai]), 1);
 		        }
+            //########cout<<"stream posotion (after read tail): "<<(int)stream.tellg()<<dec<<endl;
 		        Int_t hh=(tail[0]*256+tail[1])%4096;
 		        hh=hh+1;
 
@@ -326,7 +331,13 @@ int main(int argc,char *argv[])
 	        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	        //data loop
 	        }
-				}else{
+					if(!feefound){//########## for unrecognized fee, abandon the fee data
+					  char tmpchar;
+					  for (int i=0;i<SizePac-2;i++)
+						  stream.read(&tmpchar,1);
+					}
+				}
+				else{
 				  stream.seekg((int)stream.tellg()-1,ios::beg);
 				  continue;
 				}//header 0x90 check
