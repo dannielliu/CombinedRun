@@ -38,7 +38,9 @@ int main(int argc,char *argv[])
   // denfine IO
   string namesuffix=".root";
   string OF=filename;
-	
+	fstream timecom;//#########
+  timecom.open("timelog",ios::out);//#########
+
 	vector<string> tmpName;
 	char *tokenPtr;
 	tokenPtr=strtok((char*)OF.c_str(),"/");
@@ -53,27 +55,26 @@ int main(int argc,char *argv[])
 		cout<<OF<<endl;
 	}
 
-  
 	OF.replace(strlen(OF.c_str())-4,4,namesuffix);
   string outputfile="./Raw2ROOT/"+OF;
   cout<<"Output file name is: "<<outputfile<<endl;
   TFile *outFile=new TFile(outputfile.c_str(),"RECREATE");
   if (outFile==(TFile*) NULL)
-    {
-      std::cerr<<"Error:Could not Open Conversion ROOT File!"<<endl;
-      exit(1);
-    }
+  {
+    cerr<<"Error:Could not Open Conversion ROOT File!"<<endl;
+    exit(1);
+  }
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   //BGO constants information
   //Nlayer,Nch,Ndy,Nside,N_FEE;
   ifstream BGOinfor;
   BGOinfor.open("./map/BGO.infor");
   if(!BGOinfor.good())
-    {
-      cout<<"~~~~~~~~~~~~~~~~~"<<endl;
-      cout<<"Can not open BGO constant information file!"<<endl;
-      exit(-1);
-    }
+  {
+    cout<<"~~~~~~~~~~~~~~~~~"<<endl;
+    cerr<<"Can not open BGO constant information file!"<<endl;
+    exit(-1);
+  }
   int ConBGO[5];
   char infN[2][80];
   cout<<"~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<endl;
@@ -83,10 +84,10 @@ int main(int argc,char *argv[])
   cout<<infN[0]<<endl;
   cout<<infN[1]<<endl;
   for(int inf=0;inf<5;inf++)
-    {
-      BGOinfor>>ConBGO[inf];
-      cout<<ConBGO[inf]<<"  ";
-    }
+  {
+    BGOinfor>>ConBGO[inf];
+    cout<<ConBGO[inf]<<"  ";
+  }
   cout<<"\n";
   char infFee[2][80];
   Int_t FEEOrder[N_FEE];
@@ -94,9 +95,10 @@ int main(int argc,char *argv[])
   BGOinfor.getline(infFee[1],20);
   cout<<"~~~~~~~~FEE cards :~~~~~~~~"<<endl;
   for(int fo=0;fo<N_FEE;fo++)
-    {BGOinfor>>FEEOrder[fo];
-      cout<<FEEOrder[fo]<<"  ";
-    }
+  {
+		BGOinfor>>FEEOrder[fo];
+    cout<<FEEOrder[fo]<<"  ";
+  }
   cout<<"\n";
   //read N_channel
   char infChan[2][80];
@@ -127,20 +129,20 @@ int main(int argc,char *argv[])
   ifstream MapL0;//map of EMC plane&layer ,Dimension,BGO,Side,Dy,FEE_ID ,Chan...
   MapL0.open("./map/map_cosmic");
   if(!MapL0.good())
-    {
-      cout<<"Open MapL0 file Failed!"<<endl;
-      exit(-1);
-    }
+  {
+    cout<<"Open MapL0 file Failed!"<<endl;
+		exit(-1);
+  }
   MapL0.getline(mapinfor,80);
   //  cout<<mapinfor<<endl;
   cout<<"read map infor..."<<endl;
   for(int i=0;i<UseChan;i++)
-    {
-      MapL0>>TChanN;
-      FEE2EMC[TChanN][0]=TChanN;
-      for(int j=1;j<7;j++)
-	MapL0>>FEE2EMC[TChanN][j];//
-    }
+  {
+    MapL0>>TChanN;
+    FEE2EMC[TChanN][0]=TChanN;
+    for(int j=1;j<7;j++)
+	    MapL0>>FEE2EMC[TChanN][j];//
+  }
   MapL0.close();
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   //tree and branch
@@ -184,27 +186,27 @@ int main(int argc,char *argv[])
   unsigned char header_time[8];
   //for data header and tails
   Int_t header[4]={0,0,0,0};
-  Int_t  tail[4]={0,0,0,0};
-  Int_t  header_subDAQ[2]={0,0};
+  Int_t tail[4]={0,0,0,0};
+  Int_t header_subDAQ[2]={0,0};
   //for raw data
   signed char data_h;
   unsigned char data_l;
   //data buffer 
   Int_t data_2[144];
   memset(data_2,0,sizeof(data_2));
-  Int_t ADC_buffer[N_FEE][144]; 
+  Int_t ADC_buffer[N_FEE][144];
   Int_t Tri_buffer[N_FEE];// FEE triggers buffer
   Int_t Chn_buffer[N_FEE][144];
-  Int_t Nhits_buffer[N_FEE];  
-  for(int nf=0;nf<N_FEE;nf++) 
-    {
-      Tri_buffer[nf]=0;
-      Nhits_buffer[nf]=0;
-      for(int ch=0;ch<N_channel[nf];ch++) {
-	ADC_buffer[nf][ch]=0;
-	Chn_buffer[nf][ch]=0;
-      }
+  Int_t Nhits_buffer[N_FEE]; 
+  for(int nf=0;nf<N_FEE;nf++)
+  { 
+    Tri_buffer[nf]=0;
+    Nhits_buffer[nf]=0;
+    for(int ch=0;ch<N_channel[nf];ch++){
+	    ADC_buffer[nf][ch]=0;
+	    Chn_buffer[nf][ch]=0;
     }
+  }
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   //read binary data
   Int_t Tevent=0;
@@ -215,46 +217,35 @@ int main(int argc,char *argv[])
   for(; !stream.eof();){
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //data check
-   /* 
-      if(Tevent==52115)
-      {
-      for(int ck=0;ck<1000;ck++)
-      {
-      for(int ar=0;ar<8;ar++)
-      {
-      unsigned char Check;
-      for(int k=0;k<2;k++)
-      {
-      stream.read((char *)(&Check), 1);
-      Int_t xxx=Check*1;
-      cout<<setfill('0')<<setw(2)<<hex<<xxx;
-      }
-      cout<<" ";
-      }
-      cout<<endl;
-      }
-      break;
-      }*/ 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //time header
     if(header_flag==false){
       stream.read((char *)(&header_gl[0]),1);
       if(header_gl[0]==0xe2){
-	stream.read((char *)(&header_gl[1]),1);
-	if(header_gl[1]==0x25){
-	  for(int dir=0;dir<6;dir++)
-	    stream.read((char *)(&header_dir[dir]),1);
-	  for(int tim=0;tim<8;tim++){
-	    stream.read((char *)(&header_time[tim]),1);
-	  }
-	  for(int tim=0;tim<5;tim++){
-	    time=(time+header_time[tim])*256;
-	  }
-	    time=time+header_time[5];
-	    mtime=header_time[6]*256+header_time[7];
-	    header_flag=true;
-	}
-	else continue;
+	      stream.read((char *)(&header_gl[1]),1);
+	      if(header_gl[1]==0x25){
+	        for(int dir=0;dir<6;dir++)
+	          stream.read((char *)(&header_dir[dir]),1);
+	        for(int tim=0;tim<8;tim++){
+	          stream.read((char *)(&header_time[tim]),1);
+	        }
+					
+	        for(int tim=0;tim<5;tim++){
+	          time=(time+header_time[tim])*256;
+	        }
+	        time=time+header_time[5];//seconds part
+					//############
+					Long64_t tmptime;
+	        for(int tim=0;tim<6;tim++){
+	          tmptime=(tmptime<<8) + header_time[tim];
+	        }
+					timecom<<time<<"\t"<<tmptime<<endl;
+					tmptime=0;
+					//########
+	        mtime=header_time[6]*256+header_time[7];//milisecond
+	        header_flag=true;
+	      }
+	      else continue;
       }
       else continue;
     }
@@ -263,205 +254,197 @@ int main(int argc,char *argv[])
     else{
       stream.read((char *)(&header_subDAQ[0]),1);
       if(header_subDAQ[0]==0xeb){
-	stream.read((char *)(&header_subDAQ[1]),1);
-	if(header_subDAQ[1]==0xeb){
-	  stream.read((char *)(&header_subDAQ[1]),1);}
-	if(header_subDAQ[1]==0x90){
-    
-	  stream.read((char *)(&header[0]), 1);
-	  stream.read((char *)(&header[1]), 1);
-	  stream.read((char *)(&header[2]), 1);
-	  stream.read((char *)(&header[3]), 1);
-	  //mode :first 2 bits ; FEE ID the other 6 bits
-	  mode=(int)((Int_t)header[1]/64);//mode=0x01:compressed data; mode=0x00: primary data;
-	  header[1]=header[1]%64;
-	  //time package check    
-    
-	  SizePac = header[2]*256+header[3]*1;
-	  //SizePac = SizePac&0x3fff;
-	  if(SizePac!=294&&SizePac!=150&&mode==0)
-	    cout<<"Tevent:"<<Tevent<<" FEE"<<header[1]<<" Size:"<<SizePac<<" mode:"<<mode<<endl;
-	  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	  //FEE buffer Fill 
-	  for (int nf=0;nf<N_FEE;nf++)
-	    {
-	      //cout<<"~~~~~~~~~~~~~~~~~~~~~"<<endl;
-	      //  cout<<"FEE:"<<header[1]<<endl;   
-	      if(header[1]==FEEOrder[nf]){
-		if(mode==1){
-		  int tchl=(int)((SizePac-6)/3);
-		  if(tchl<=N_channel[nf])//compressed
-		    for(int iChan=0;iChan<tchl;iChan++) {
-		      stream.read((char *)(&Chn_buffer[nf][Nhits_buffer[nf]]),1);
-          
-		      stream.read((char *)(&data_h), 1);
-		      // stream.read((char *)(&data_u), 1);
-		      stream.read((char *)(&data_l), 1);
-		      data_2[iChan] = data_h*256+data_l*1;
-		      if(Chn_buffer[nf][Nhits_buffer[nf]]<0){
-			cout<<"Tevent:"<<Tevent<<" FEE"<<(int)header[1]<<" Size:"<<SizePac<<" mode:"<<mode<<endl;
-			cout<<"SizePac:"<<SizePac<<endl;
-			cout<<"Nhits_buffer:"<<Nhits_buffer[nf]<<endl;      
-			cout<<"Chn_buffer:"<<Chn_buffer[nf][Nhits_buffer[nf]]<<endl;}
-		      else if(Chn_buffer[nf][Nhits_buffer[nf]]<N_channel[nf]&&Chn_buffer[nf][Nhits_buffer[nf]]>0){
-			ADC_buffer[nf][Chn_buffer[nf][Nhits_buffer[nf]]]=data_2[iChan];
-			//cout<<data_2[iChan]<<" ";
-			Nhits_buffer[nf]++;
-		      }
-		    }
-		  if((SizePac-6)%3!=0){
-		    unsigned char spare;
-		    stream.read((char *)(&spare), 1);
-		  }
-		}
-		else if(mode==0||mode==2){//primary
-		  for(int iChan=0;iChan<N_channel[nf];iChan++) {
-		    Chn_buffer[nf][iChan]=iChan;
-		    stream.read((char *)(&data_h), 1);
-		    //stream.read((char *)(&data_u), 1);
-		    stream.read((char *)(&data_l), 1);
-		    data_2[iChan] = data_h*256+data_l*1;
-		    //data_2[iChan] = data_u*256+data_l*1;
-		    //if(data_2[iChan]>32767)
-		    //data_2[iChan]-=65536;
-		    ADC_buffer[nf][iChan]=data_2[iChan];
-		    Nhits_buffer[nf]++;
-		  }}
-		//cout<<"FEE:"<<header[1]<<"  nHit:"<<Nhits_buffer[header[1]%16]<<endl;
-		for(int tai=0;tai<4;tai++) {
-		  stream.read((char *)(&tail[tai]), 1);
-		} 
-		Int_t hh=(tail[0]*256+tail[1])%4096;
-		hh=hh+1;
-		//   if(hh==2960)
-		//  cout<<Tevent<<"  "<<Tri_buffer[nf]<<endl;
+	      stream.read((char *)(&header_subDAQ[1]),1);
+	      if(header_subDAQ[1]==0x90){
+	        stream.read((char *)(&header[0]), 1);
+	        stream.read((char *)(&header[1]), 1);
+	        stream.read((char *)(&header[2]), 1);
+	        stream.read((char *)(&header[3]), 1);
+	        //mode :first 2 bits ; FEE ID the other 6 bits
+	        mode=(int)((Int_t)header[1]/64);//mode=0x01:compressed data; mode=0x00: primary data;
+	        header[1]=header[1]%64;
+	        //time package check    
+	        SizePac = header[2]*256+header[3]*1;
+	        //SizePac = SizePac&0x3fff;
+	        if(SizePac!=294&&SizePac!=150&&mode==0)
+	          cout<<"Tevent:"<<Tevent<<" FEE"<<header[1]<<" Size:"<<SizePac<<" mode:"<<mode<<endl;
+	        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	        //FEE buffer Fill 
+	        for (int nf=0;nf<N_FEE;nf++){
+	        //cout<<"~~~~~~~~~~~~~~~~~~~~~"<<endl;
+	        //  cout<<"FEE:"<<header[1]<<endl;   
+	        if(header[1]==FEEOrder[nf]){
+		        if(mode==1){//compressed mode
+		          int tchl=(int)((SizePac-6)/3);
+		          if(tchl<=N_channel[nf])//compressed
+		            for(int iChan=0;iChan<tchl;iChan++) {
+		              stream.read((char *)(&Chn_buffer[nf][Nhits_buffer[nf]]),1);
+		              stream.read((char *)(&data_h), 1);
+		              // stream.read((char *)(&data_u), 1);
+		              stream.read((char *)(&data_l), 1);
+		              data_2[iChan] = data_h*256+data_l*1;
+		              if(Chn_buffer[nf][Nhits_buffer[nf]]<0){
+			              cout<<"Tevent:"<<Tevent<<" FEE"<<(int)header[1]<<" Size:"<<SizePac<<" mode:"<<mode<<endl;
+			              cout<<"SizePac:"<<SizePac<<endl;
+			              cout<<"Nhits_buffer:"<<Nhits_buffer[nf]<<endl;      
+			              cout<<"Chn_buffer:"<<Chn_buffer[nf][Nhits_buffer[nf]]<<endl;
+                  }
+		              else if(Chn_buffer[nf][Nhits_buffer[nf]]<N_channel[nf]&&Chn_buffer[nf][Nhits_buffer[nf]]>0){
+			              ADC_buffer[nf][Chn_buffer[nf][Nhits_buffer[nf]]]=data_2[iChan];
+			              //cout<<data_2[iChan]<<" ";
+			              Nhits_buffer[nf]++;
+		              }
+		            }
+		          if((SizePac-6)%3!=0){ //possible another byte for even
+		            unsigned char spare;
+		            stream.read((char *)(&spare), 1);
+		          }
+		        }
+		        else if(mode==0||mode==2){//primary
+		          for(int iChan=0;iChan<N_channel[nf];iChan++) {
+		            Chn_buffer[nf][iChan]=iChan;
+		            stream.read((char *)(&data_h), 1);
+		            stream.read((char *)(&data_l), 1);
+		            data_2[iChan] = data_h*256+data_l*1;
+		            //if(data_2[iChan]>32767)
+		            //data_2[iChan]-=65536;
+		            ADC_buffer[nf][iChan]=data_2[iChan];
+		            Nhits_buffer[nf]++;
+		          }
+						}
+		        //cout<<"FEE:"<<header[1]<<"  nHit:"<<Nhits_buffer[header[1]%16]<<endl;
+		        for(int tai=0;tai<4;tai++) {
+		          stream.read((char *)(&tail[tai]), 1);
+		        }
+		        Int_t hh=(tail[0]*256+tail[1])%4096;
+		        hh=hh+1;
 
-		if(Tri_buffer[nf]==0)
-		  Tri_buffer[nf]=hh;
-		/* stream.read((char *)(&tail_subDAQ),2);
-		   if(tail_subDAQ!=42330){
-		   tailerror=true;
-		   cout<<"tail error !"<<endl;
-		   }*/
-	      }}
-    
+		        if(Tri_buffer[nf]==0)
+		          Tri_buffer[nf]=hh;
+	        }
 
-	  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	  //data loop
-	}else continue;//header 0x90 check
+	        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	        //data loop
+	        }
+				}else{
+				  stream.seekg((int)stream.tellg()-1,ios::beg);
+				  continue;
+				}//header 0x90 check
       }else continue;//header 0xeb check
       //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       trifill=true;
       bool trimatch=true;
-      for(int tr=0;tr<N_FEE;tr++)
-        {
-	  if(Tri_buffer[tr]==0){
-	    trifill=false;
-	    break;
-          }
+      for(int tr=0;tr<N_FEE;tr++){
+	      if(Tri_buffer[tr]==0){
+	        trifill=false;
+	        break;
         }
-      if(trifill==true)
-	for(int tr=0;tr<N_FEE;tr++)
-	  {
-	    if(Tri_buffer[tr]!=Tri_buffer[0]){
-	      cout<<"~~~~~~~~~~~~~~~~~~~~~~"<<endl;
-	      cout<<"Trigger unmatch!"<<endl;
-	      trimatch=false;
-	      cout<<"trigger:"<<trigger+1<<" Tevent:"<<Tevent<<endl;
-	      for(int n=0;n<N_FEE;n++)
-		{cout<<Tri_buffer[n]<<"  ";}
-	      cout<<"\n"<<endl;
-	      break;
+      }
+      if(trifill==true){
+	    for(int tr=0;tr<N_FEE;tr++)//{
+	      if(Tri_buffer[tr]!=Tri_buffer[0]){
+	        cout<<"~~~~~~~~~~~~~~~~~~~~~~"<<endl;
+	        cout<<"Trigger unmatch!"<<endl;
+	        trimatch=false;
+	        cout<<"trigger:"<<trigger+1<<" Tevent:"<<Tevent<<endl;
+					for(int n=0;n<8;n++){
+					  cout<<hex<<(unsigned short)header_time[n]<<"  ";
+					}
+					cout<<dec<<endl;
+	        for(int n=0;n<N_FEE;n++){
+					  cout<<Tri_buffer[n]<<"  ";
+				  }
+	        cout<<"\n"<<endl;
+	        break;
+	      }
 	    }
-	  }
-      // trigger cheack 
+      // trigger check 
       
       if(trifill==true&&trimatch==false) {
-	//same trigger number
-	Int_t tMax=Tri_buffer[0];
-	Int_t tMin=Tri_buffer[0];
-	for(int n=0;n<N_FEE;n++){
-	  if(Tri_buffer[n]>tMax)
-	    tMax=Tri_buffer[n];
-	  if(Tri_buffer[n]<tMin)
-	    tMin=Tri_buffer[n];
-	}
+	      //same trigger number
+	      Int_t tMax=Tri_buffer[0];
+	      Int_t tMin=Tri_buffer[0];
+	      for(int n=0;n<N_FEE;n++){
+	        if(Tri_buffer[n]>tMax)
+	          tMax=Tri_buffer[n];
+	        if(Tri_buffer[n]<tMin)
+					  tMin=Tri_buffer[n];
+	      }
         if((tMax-tMin)>=2){
-	  memset(Tri_buffer,0,sizeof(Tri_buffer));
-	  memset(Nhits_buffer,0,sizeof(Nhits_buffer));
-	}
+	        memset(Tri_buffer,0,sizeof(Tri_buffer));
+	        memset(Nhits_buffer,0,sizeof(Nhits_buffer));
+        }
         else
-	  for(int n=0;n<N_FEE;n++){
-	    if(Tri_buffer[n]!=tMax)
-	      {Tri_buffer[n]=0;Nhits_buffer[n]=0;
-	      }}
+	        for(int n=0;n<N_FEE;n++){
+	          if(Tri_buffer[n]!=tMax){
+              Tri_buffer[n]=0;Nhits_buffer[n]=0;
+	          }
+          }
       }
-      if(trifill==true&&trimatch==true)
-	{ 
-	  if((Tri_buffer[0]-trigger%4096)!=1){
-	    cout<<"~~~~~"<<"trigger last:"<<trigger<<" trigger now:"<<Tri_buffer[0]<<"~~~~~"<<endl;
-            cout<<"Tevent:"<<Tevent<<endl;
-	  }
-	  trigger=Tri_buffer[0];
-	  for(int iFEE=0;iFEE<N_FEE;iFEE++)
-	    {
-	      // Int_t nChan=n_start[iFEE];
-	      Int_t nst=n_start[FEEOrder[iFEE]%16];
-	      Int_t nChan=0;
-	      for(int iChan=0;iChan<Nhits_buffer[iFEE];iChan++)
-		{
-		  //	     cout<<Nhits_buffer[iFEE]<<endl; 
-		  nChan=nst+Chn_buffer[iFEE][iChan];
-		  if(FEE2EMC[nChan][5]==0)
-		    continue;
-		  //Tchan   Layer   Side    Bar     Dy      FEE     FeeChannel
-		  FEE_ID[nHits]=FEE2EMC[nChan][5];
-		  Chan[nHits]=FEE2EMC[nChan][6];
-		  ADC[nHits]=ADC_buffer[iFEE][Chn_buffer[iFEE][iChan]];
-		  //cout<<"Event:"<<event<<" "<<Nhits_buffer[iFEE]<<" "<<ADC[nHits]<<" "<<endl; 
-		  Layer[nHits]=FEE2EMC[nChan][1];
-		  Bar[nHits]=FEE2EMC[nChan][3];
-		  Side[nHits]=FEE2EMC[nChan][2];// 1:front or left 2:rear or right
-		  //      Side[nHits]=0;// 1:front or left 2:rear or right
-		  Dy[nHits]=FEE2EMC[nChan][4];
-		  GID[nHits]=((Layer[nHits]*Nside+Side[nHits])*Nch+Bar[nHits])*Ndy+(Dy[nHits]-2)/3;
-		  //GID =((layer*2+side)*24+bar)*3;  
-		  nHits++; 
-		}}
-	  //cout<<"nHits:"<<nHits<<endl;
-	  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	  //reset buffer
+      if(trifill==true&&trimatch==true){ 
+	      if((Tri_buffer[0]-trigger%4096)!=1){
+	        cout<<"~~~~~"<<"trigger last:"<<trigger<<" trigger now:"<<Tri_buffer[0]<<"~~~~~"<<endl;
+          cout<<"Tevent:"<<Tevent<<endl;
+	      }
+	      trigger=Tri_buffer[0];
+	      for(int iFEE=0;iFEE<N_FEE;iFEE++){
+          // Int_t nChan=n_start[iFEE];
+	        Int_t nst=n_start[FEEOrder[iFEE]%16];
+	        Int_t nChan=0;
+	        for(int iChan=0;iChan<Nhits_buffer[iFEE];iChan++){
+            //cout<<Nhits_buffer[iFEE]<<endl; 
+		        nChan=nst+Chn_buffer[iFEE][iChan];
+		        if(FEE2EMC[nChan][5]==0)
+		          continue;
+		        //Tchan   Layer   Side    Bar     Dy      FEE     FeeChannel
+		        FEE_ID[nHits]=FEE2EMC[nChan][5];
+            Chan[nHits]=FEE2EMC[nChan][6];
+		        ADC[nHits]=ADC_buffer[iFEE][Chn_buffer[iFEE][iChan]];
+		        //cout<<"Event:"<<event<<" "<<Nhits_buffer[iFEE]<<" "<<ADC[nHits]<<" "<<endl; 
+		        Layer[nHits]=FEE2EMC[nChan][1];
+		        Bar[nHits]=FEE2EMC[nChan][3];
+		        Side[nHits]=FEE2EMC[nChan][2];// 1:front or left 2:rear or right
+            //      Side[nHits]=0;// 1:front or left 2:rear or right
+		        Dy[nHits]=FEE2EMC[nChan][4];
+		        GID[nHits]=((Layer[nHits]*Nside+Side[nHits])*Nch+Bar[nHits])*Ndy+(Dy[nHits]-2)/3;
+		        //GID =((layer*2+side)*24+bar)*3;  
+		        nHits++; 
+	        }
+        }
+	      //cout<<"nHits:"<<nHits<<endl;
+	      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	      //reset buffer
 	  
-	  for(int iFEE=0;iFEE<N_FEE;iFEE++)
-	    {
-	      Nhits_buffer[iFEE]=0;
-	      Tri_buffer[iFEE]=0;
-	      for(int iChan=0;iChan<N_channel[iFEE];iChan++)
-		{ADC_buffer[iFEE][iChan]=0;
-		  Chn_buffer[iFEE][iChan]=0;}
+	      for(int iFEE=0;iFEE<N_FEE;iFEE++){
+	        Nhits_buffer[iFEE]=0;
+	        Tri_buffer[iFEE]=0;
+	        for(int iChan=0;iChan<N_channel[iFEE];iChan++){
+					  ADC_buffer[iFEE][iChan]=0;
+		        Chn_buffer[iFEE][iChan]=0;
+					}
+	      }
+	      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	      //Fill Tree  
+	      EMCTree->Fill();
+	      event++;
+	      if(event%1000==0)
+	        cout<<"eventID is "<<event<<endl;
+	      nHits=0;  
+	      time=0;
+        mode=10; //mode=0,normal data
+        mtime=0;
+        	  
+	      memset(FEE_ID,0,sizeof(FEE_ID));
+	      memset(Chan,0,sizeof(Chan));
+	      memset(ADC,0,sizeof(ADC));
+	      memset(Layer,0,sizeof(Layer));
+	      memset(Bar,0,sizeof(Bar));
+	      memset(Side,0,sizeof(Side));
+	      memset(Dy,0,sizeof(Dy));
+	      memset(GID,0,sizeof(GID));
+	      Tevent=event;
+	      header_flag=false;
 	    }
-	  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	  //Fill Tree  
-	  EMCTree->Fill();
-	  event++;
-	  if(event%1000==0)
-	    cout<<"eventID is "<<event<<endl;
-	  nHits=0;  
-	  time=0;
-          mode=10; //mode=0,normal data
-          mtime=0;
-          	  
-	  memset(FEE_ID,0,sizeof(FEE_ID));
-	  memset(Chan,0,sizeof(Chan));
-	  memset(ADC,0,sizeof(ADC));
-	  memset(Layer,0,sizeof(Layer));
-	  memset(Bar,0,sizeof(Bar));
-	  memset(Side,0,sizeof(Side));
-	  memset(Dy,0,sizeof(Dy));
-	  memset(GID,0,sizeof(GID));
-	  Tevent=event;
-	  header_flag=false;
-	}
     }
   }//data read end 
   outFile->cd();
@@ -471,3 +454,4 @@ int main(int argc,char *argv[])
   cout<<"Total Events:"<<Tevent<<endl;
   return 0;
 }
+
